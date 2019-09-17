@@ -10,6 +10,18 @@ objects:
   - cases: CaseList
   - service_agencies: DAList
 ---
+metadata: 
+  title: |
+    Clean Slate Buddy
+  short title: |
+    Clean Slate Buddy
+  description: |
+    Fill in expungement and clean slate sealing petitions quickly
+  authors: 
+    - name: Nate Vogel
+    - organization: Community Legal Services
+  revision_date: 2019-09-17
+---
 mandatory: True
 code: |
   cases.there_are_any = True
