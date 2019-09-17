@@ -1,0 +1,293 @@
+---
+modules:
+  - docassemble.base.util
+  - .Case
+  - .CleanSlateConstants
+---
+objects:
+  - user: Individual
+  - client: Individual
+  - cases: CaseList
+  - service_agencies: DAList
+---
+mandatory: True
+code: |
+  cases.there_are_any = True
+---
+mandatory: True
+code: |
+  service_agencies.clear()
+  service_agencies.object_type = Agency
+  service_agencies.append(Agency(
+    name="The Clerk of Courts of Philadelphia County, Criminal Division"))
+  service_agencies.append(Agency(
+    name="The Philadelphia County District Attorney's Office"))
+  service_agencies.append(Agency(
+    name="The Pennsylvania State police, Central Records"))
+  service_agencies.append(Agency(
+    name="A.O.P.C. Expungement Unit"))
+  service_agencies.append(Agency(
+    name="Philadelphia Police Department"))
+  service_agencies.append(Agency(
+    name="Philadelphia County Department of Adult Probation and Parole"))
+  service_agencies.there_is_another = True
+---
+code: |
+  cases[i].charges.there_are_any = True
+---
+mandatory: True
+question: |
+  Welcome to the Clean Slate Buddy (DEMO!) 
+subquestion: |
+  This is an experimental tool to help Pennsylvania Civil Legal Services 
+  advocates draft expungement and sealing petitions. 
+    
+  Thanks to Clean Slate, many records are no longer visible to the public online.
+  This protects Pennsylvanians' privacy and helps many around the state access 
+  employment. But it also means that we can't automatically pull criminal records
+  from a public website. So with tool, you can enter the criminal record information
+  you wish to expunge or seal by hande.
+  
+  Its more manual than the Expungement Generator, but we hope its a helpful tool
+  for drafting your petitions quickly.
+  
+  **This tool only fills in forms based on information you provide. Its up to you to do the legal analysis to figure out what petitions you can file** 
+buttons:
+  - Try out Clean Slate Buddy: continue
+---
+mandatory: true
+question: |
+  Here are your documents. Check them over carefully!
+subquestion: |
+  Thank you for using MyCleanSlateBuddy. 
+  
+  Your client's info:
+  
+  Name: ${ client.name.full() }
+  
+  Your info: 
+  
+  Name: ${ user.name.full() }
+  
+  Cases you want to expunge:
+    % for case in cases:
+      OTN:        ${case.otn}
+      
+      % for charge in case.charges:
+        Offense: ${ charge.offense_name }
+      % endfor
+    % endfor
+attachment code: generated_docs 
+---
+question: Information for the ${ ordinal(i) } case
+fields:
+  - Docket Number: cases[i].docket_number
+  - OTN: cases[i].otn
+  - DC: cases[i].dc
+  - Arrest Date: cases[i].arrest_date
+    datatype: date
+  - Affiant: cases[i].affiant
+    default: "Philadelphia Police Department"
+  - Arresting Agency: cases[i].arresting_agency
+    default: "Philadelphia Police Department"
+  - Arresting Agency Address: cases[i].arresting_agency_addr
+    default: "Philadelphia County, PA"
+  - Judges Address: cases[i].judge_address
+    default: "1301 Filbert St. Philadelphia, PA 19107?"
+  - Judges Name: cases[i].judge_name
+  - Total Fines: cases[i].total_fines
+    datatype: number
+  - Fines Paid: cases[i].fines_paid
+    datatype: number
+  - Summary expungement (&sect; 490) or regular expungement (&sect; 790)?: cases[i].exp_section
+    choices:
+      - Summary: "&sect; 490"
+      - Nonconvictions: "&sect; 790"
+  - Full Expungement or partial?: cases[i].expungement_type
+    choices:
+      - Full Expungement
+      - Partial Expungement
+---
+code: |
+  # complaint date and arrest date are the same.
+  cases[i].complaint_date = cases[i].arrest_date
+---
+reconsider: True
+code: | 
+  if cases[i].complete and not cases[i].charges.complete:
+    cases[i].charges.gather()
+---
+question: Charges for case ${ cases[i].docket_number } 
+fields:
+  - Section Number: cases[i].charges[j].section_number
+    default: "18 &sect;"
+  - Offense Name: cases[i].charges[j].offense_name
+  - Offense Grade: cases[i].charges[j].offense_grade
+  - Offense disposition: cases[i].charges[j].disposition
+  - Offense disposition date: cases[i].charges[j].dispo_date
+    datatype: date
+  - Was this a summary conviction (and Cl. has been arrest-free more than 5 yrs)?: cases[i].charges[j].summary_conviction
+    choices:
+      - Yes
+      - No
+list collect: True
+---
+question: Agencies who should receive service of Expungement Petitions
+fields: 
+  - Agency Name: service_agencies[i].name
+    required: False
+list collect: True
+---
+question: Would you like enter information about another case?
+yesno: cases.there_is_another
+---
+code: |
+  generated_docs = [ifp_petition, overview] + [case.expungement_petition for case in cases] 
+  if county == "Montgomery":
+    generated_docs.append(montco_cert)
+---
+question: | 
+  Information about the person filing the petition
+fields:
+  - First Name: user.name.first
+  - Last Name: user.name.last
+  - Bar ID: user.bar_id
+  - Organization: user.organization
+  - Organization Address: user.organization_address
+  - Organization Phone: user.organization_phone
+---
+question: |
+  In which county are you filing petitions?
+subquestion: |
+  If you need to file petitions in multiple counties, you'll need to go through
+  this site's interview for each county's petitions.
+  
+  If you frequently file in multiple counties and this is a big headache for you,
+  please let Community Legal Services know, and we can try to figure out a different
+  approach.
+field: county
+combobox:
+  code: COUNTIES
+---
+code: |
+  disposition_list = ", ".join(set([charge.disposition for charge in cases[i].charges]))
+---
+code: |
+  # if Petitioner is over seventy, then any summary convictions 
+  cases[i].summary_extra = "."
+  if any(c.summary_conviction for c in cases[i].charges) and client.no_arrests_five_years:
+    cases[i].summary_extra = (
+      " and Petitioner has been arrest free for more than five years since" +
+      " this summary conviction")
+  
+  if client.over_seventy_no_arrests:
+    cases[i].summary_extra = (
+      " and Petitioner is over 70 years old and has been free of arrest" +
+      " for more than ten years since this summary conviction.")
+---
+code: |
+  ifp_message = (
+    user.organization + " is a non-profit legal services organization that " +
+    "provides free legal assistance to low-income individuals. I, attorney for " +
+    "the Petitioner, certify that Petitioner meets the financial eligibility " +
+    "standards for representation by " + user.organization + " and that I am " +
+    "providing free legal service to Petitioner."
+  )
+---
+code: |
+  # For counties outside Philadelphia, courts require a petition to also include
+  # a recent copy of the State Police Criminal History Report (CHR).
+  # In Montgomery County, the CHR is not required for expungements of cases 
+  # where the Petitioner has completed ADR.
+  # This text adds a note explaining that the CHR is or is not attached.
+  cases[i].include_chr = (
+    " Pursuant to local practice, the Commonwealth agrees to waive the " +
+    "requirement of attachment to this Petition of a current copy of the " +
+    "Petitioner's Pennsylvania State Police Criminal History Report. " +
+    "This waiver may be revoked by the Commonwealth in any case and at any " +
+    "time prior to the granting of the relief requested.")
+    
+  if county != "Philadelphia":
+    cases[i].include_chr = (
+      " I have attached a copy of Petitioner's Pennsylvania State Police " +
+      "Criminal History which I have obtained within 60 days prior to filing " +
+      "this petition.")
+---
+question: |
+  Information about the client
+fields:
+  - First Name: client.name.first
+  - Last Name: client.name.last
+  - Aliases, separated by commas: client.aliases
+    required: False
+    default: ""
+  - Street Address: client.address.address
+  - City: client.address.city
+  - State: client.address.state
+  - Zip: client.address.zip
+  - Birthdate: client.birthdate
+    datatype: date
+  - SSN: client.ssn
+  - Over 70, and no arrests in 10 years?: client.over_seventy_no_arrests
+    choices: 
+      - Yes: True
+      - No: False
+  - Under 70, no arrests or convictions in 5 years?: client.no_arrests_five_years
+    choices:
+      - Yes: True
+      - No: False
+---
+attachment:
+  name: ${ cases[i].exp_section } Expungement Petition for ${ cases[i].docket_number }
+  filename:  ${ space_to_underscore(cases[i].docket_number) }_expungement__petition
+  docx template file: 790ExpungementTemplate_usingpythonvars.docx
+  variable name: cases[i].expungement_petition
+---
+attachment:
+  name: Overview
+  filename: Overview
+  docx template file: overviewTemplate.docx
+  variable name: overview
+---
+attachment:
+  name: IFP Petition
+  filename: IFPPetition
+  docx template file: IFPTemplate.docx
+  variable name: ifp_petition
+  fields:
+    - ATTORNEY_HEADER: ${ user.organization.upper() + " BY " + user.name.full()}
+    - ATTORNEY_FOR: ${ "FOR " + client.name.full() }
+    - FIRST_NAME: ${ client.name.first }
+    - LAST_NAME: ${ client.name.last }
+    - STREET: ${ client.address.address }
+    - CITY: ${ client.address.city }
+    - STATE: ${ client.address.state }
+    - ZIP: ${ client.address.zip }
+    - COUNTY: ${ county }
+    - CP: ${ "WHAT IS CP?" }
+    - OTN: ${ "OTN PLACEHOLDER" }
+    - ATTORNEY_FIRST: ${ user.name.first }
+    - ATTORNEY_LAST: ${ user.name.last }
+    - ORDER_YEAR: ${  today(format='YYYY') }
+    - PETITION_DATE: ${ today() }
+---
+attachment: 
+  name: MontCo Service Certificate
+  filename: MontCoServiceCert
+  docx template file: MontcoCertificateofServiceTemplate.docx
+  variable name: montco_cert
+  fields:
+    - ATTORNEY_HEADER: ${ user.organization.upper() + " BY " + user.name.full()}
+    - ATTORNEY_FOR: ${ "FOR " + client.name.full() }
+    - COUNTY: ${ county }
+    - CP: ${ "what is cp? "}
+    - FIRST_NAME: ${ client.name.first }
+    - LAST_NAME: ${ client.name.last }
+    - STREET: ${ client.address.address }
+    - CITY: ${ client.address.city }
+    - STATE: ${ client.address.state }
+    - ZIP: ${ client.address.zip }
+    - PETITION_DATE: ${ today() }
+    - ATTORNEY_ELEC_SIG: ${ "" }
+    - ATTORNEY_NAME: ${ user.name.first + " " + user.name.last }
+---
