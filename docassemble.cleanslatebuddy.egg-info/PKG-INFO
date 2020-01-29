@@ -1,0 +1,21 @@
+Metadata-Version: 2.1
+Name: docassemble.cleanslatebuddy
+Version: 1.0
+Summary: Get help preparing expungement petitions
+Home-page: https://docassemble.clsphila.org
+Author: Nate Vogel
+Author-email: nvogel@clsphila.org
+License: The MIT License
+Description: # Clean Slate Buddy
+        
+        Skip the _really_ tedious parts of filling out Expungement petitions. 
+        
+        Use this Docassemble guided interview to automatically generate petitions
+        for expungements and sealings.
+        
+        You still have to enter the records you want to expunge by hand, but this interview
+        will fill in the required petitions for you. 
+        
+        
+Platform: UNKNOWN
+Description-Content-Type: text/markdown
