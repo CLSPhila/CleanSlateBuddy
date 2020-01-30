@@ -65,11 +65,9 @@ subquestion: |
   Its more manual than the Expungement Generator, but we hope its a helpful tool
   for drafting your petitions quickly.
   
-  **Recent change:** Due to a bug in the system, this guided interview is not asking you
-to specify the names of agencies that must be served with copies of your petitions. 
-A default set of agencies will be automatically added to you petition, but it is up
-to you to make sure the agencies are the right ones for your petitions. Hopefully this can
-get fixed eventually.   
+  **Recent change:** Due to a bug in the system, this guided interview is not asking you to specify the names of agencies that must be served with copies of your petitions. 
+
+  A default set of agencies will be automatically added to you petition, but it is up to you to make sure the agencies are the right one for your petitions. Hopefully this can get fixed eventually.   
   
 buttons:
   - Try out Clean Slate Buddy: continue
